@@ -151,7 +151,7 @@ app.get('/api/leaderboard', async (req, res) => {
     const leaderboardMap = {};
     scores.forEach(scoreEntry => {
       const username = userMap[scoreEntry.user_id];
-      if (username && (!leaderboardMap[username] || scoreEntry.score > leaderboardMap[username]) {
+      if (username && (!leaderboardMap[username] || scoreEntry.score > leaderboardMap[username])) {
         leaderboardMap[username] = scoreEntry.score;
       }
     });
