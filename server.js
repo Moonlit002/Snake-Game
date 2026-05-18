@@ -28,31 +28,33 @@ app.post('/api/register', async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    const { data: existingUser, error: checkError } = await supabase
+    const { data: existingUser } = await supabase
       .from('users')
       .select('id')
-      .eq('username', username)
-      .single();
+      .eq('username', username);
     
-    if (existingUser) {
+    if (existingUser && existingUser.length > 0) {
       return res.status(400).json({ error: 'Username already exists' });
     }
     
     const { data: newUser, error: insertError } = await supabase
       .from('users')
       .insert({ username, password: hashedPassword })
-      .select('id, username')
-      .single();
+      .select('id, username');
     
     if (insertError) {
-      console.error(insertError);
+      console.error('Insert user error:', insertError);
       return res.status(500).json({ error: 'Internal server error' });
     }
     
-    const token = jwt.sign({ userId: newUser.id, username: newUser.username }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, username: newUser.username, userId: newUser.id });
+    if (!newUser || newUser.length === 0) {
+      return res.status(500).json({ error: 'Failed to create user' });
+    }
+    
+    const token = jwt.sign({ userId: newUser[0].id, username: newUser[0].username }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ token, username: newUser[0].username, userId: newUser[0].id });
   } catch (error) {
-    console.error(error);
+    console.error('Register error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -63,16 +65,16 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ error: 'Username and password are required' });
   }
   try {
-    const { data: user, error: fetchError } = await supabase
+    const { data: users, error: fetchError } = await supabase
       .from('users')
       .select('id, username, password')
-      .eq('username', username)
-      .single();
+      .eq('username', username);
     
-    if (fetchError || !user) {
+    if (fetchError || !users || users.length === 0) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
     
+    const user = users[0];
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(400).json({ error: 'Invalid credentials' });
@@ -81,7 +83,7 @@ app.post('/api/login', async (req, res) => {
     const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '30d' });
     res.json({ token, username: user.username, userId: user.id });
   } catch (error) {
-    console.error(error);
+    console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -109,52 +111,59 @@ app.post('/api/score', authenticateToken, async (req, res) => {
       .insert({ user_id: req.user.userId, score });
     
     if (error) {
-      console.error(error);
+      console.error('Save score error:', error);
       return res.status(500).json({ error: 'Internal server error' });
     }
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    console.error('Save score error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data: scores, error: scoresError } = await supabase
       .from('scores')
-      .select(`
-        user_id,
-        score,
-        users (
-          username
-        )
-      `)
+      .select('user_id, score')
       .order('score', { ascending: false })
-      .limit(10);
+      .limit(100);
     
-    if (error) {
-      console.error(error);
+    if (scoresError) {
+      console.error('Leaderboard scores error:', scoresError);
       return res.status(500).json({ error: 'Internal server error' });
     }
+
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, username');
     
-    const leaderboard = data.map(item => ({
-      username: item.users.username,
-      high_score: item.score
-    }));
-    
-    const uniqueUsers = {};
-    const filteredLeaderboard = [];
-    for (const item of leaderboard) {
-      if (!uniqueUsers[item.username]) {
-        uniqueUsers[item.username] = true;
-        filteredLeaderboard.push(item);
-      }
+    if (usersError) {
+      console.error('Leaderboard users error:', usersError);
+      return res.status(500).json({ error: 'Internal server error' });
     }
-    
-    res.json(filteredLeaderboard.slice(0, 10));
+
+    const userMap = {};
+    users.forEach(user => {
+      userMap[user.id] = user.username;
+    });
+
+    const leaderboardMap = {};
+    scores.forEach(scoreEntry => {
+      const username = userMap[scoreEntry.user_id];
+      if (username && (!leaderboardMap[username] || scoreEntry.score > leaderboardMap[username]) {
+        leaderboardMap[username] = scoreEntry.score;
+      }
+    });
+
+    const leaderboard = Object.entries(leaderboardMap)
+      .map(([username, high_score]) => ({ username, high_score }))
+      .sort((a, b) => b.high_score - a.high_score)
+      .slice(0, 10);
+
+    res.json(leaderboard);
   } catch (error) {
-    console.error(error);
+    console.error('Leaderboard error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -168,12 +177,12 @@ app.get('/api/user-scores', authenticateToken, async (req, res) => {
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error(error);
+      console.error('User scores error:', error);
       return res.status(500).json({ error: 'Internal server error' });
     }
-    res.json(data);
+    res.json(data || []);
   } catch (error) {
-    console.error(error);
+    console.error('User scores error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -182,3 +191,4 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log('Connected to Supabase');
 });
+
