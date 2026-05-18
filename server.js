@@ -162,8 +162,7 @@ app.get('/api/leaderboard', async (req, res) => {
     const { data: scores, error: scoresError } = await supabase
       .from('scores')
       .select('user_id, score')
-      .order('score', { ascending: false })
-      .limit(100);
+      .order('score', { ascending: false });
     
     if (scoresError) {
       console.error('Leaderboard scores error:', scoresError);
@@ -187,8 +186,10 @@ app.get('/api/leaderboard', async (req, res) => {
     const leaderboardMap = {};
     scores.forEach(scoreEntry => {
       const username = userMap[scoreEntry.user_id];
-      if (username && (!leaderboardMap[username] || scoreEntry.score > leaderboardMap[username])) {
-        leaderboardMap[username] = scoreEntry.score;
+      if (username) {
+        if (!leaderboardMap[username] || scoreEntry.score > leaderboardMap[username]) {
+          leaderboardMap[username] = scoreEntry.score;
+        }
       }
     });
 
