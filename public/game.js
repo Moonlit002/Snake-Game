@@ -79,6 +79,7 @@ function showGameSection() {
     resizeCanvas();
     gameInitialized = false;
     document.querySelector('.start-hint').style.display = 'block';
+    loadHighScore();
     initGame();
     drawGame();
 }
