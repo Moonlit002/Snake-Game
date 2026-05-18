@@ -1,0 +1,96 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game - Modern Edition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background"></div>
+    <div class="container">
+        <div id="auth-section">
+            <div class="auth-card">
+                <img src="https://play-lh.googleusercontent.com/-CFx3y40kgC9r6Prswcsrnd7V3ghHN7j4A5X61RgaaVM9tIcMQydcHejAuvh22pvQGHhpF6Lc4RPTPPlWQDCkw" class="snake-logo" alt="Snake Logo">
+                <h1>Snake Game</h1>
+                <div class="auth-forms">
+                    <div class="form-container" id="login-form">
+                        <h2>Welcome Back!</h2>
+                        <form id="login">
+                            <input type="text" id="login-username" placeholder="Username" required>
+                            <input type="password" id="login-password" placeholder="Password" required>
+                            <button type="submit" class="glow-btn">Login</button>
+                        </form>
+                        <p>Don't have an account? <a href="#" id="show-register">Sign Up</a></p>
+                    </div>
+                    <div class="form-container" id="register-form" style="display: none;">
+                        <h2>Create Account</h2>
+                        <form id="register">
+                            <input type="text" id="register-username" placeholder="Username" required>
+                            <input type="password" id="register-password" placeholder="Password" required>
+                            <button type="submit" class="glow-btn">Register</button>
+                        </form>
+                        <p>Already have an account? <a href="#" id="show-login">Login</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="menu-section" style="display: none;">
+            <div class="menu-card">
+                <img src="https://play-lh.googleusercontent.com/-CFx3y40kgC9r6Prswcsrnd7V3ghHN7j4A5X61RgaaVM9tIcMQydcHejAuvh22pvQGHhpF6Lc4RPTPPlWQDCkw" class="snake-logo" alt="Snake Logo">
+                <h1>Hey, <span id="username-display-menu"></span>!</h1>
+                <div class="menu-buttons">
+                    <button class="menu-btn glow-btn" id="play-btn">Play</button>
+                    <button class="menu-btn glow-btn" id="leaderboard-btn">Leaderboards</button>
+                </div>
+                <button class="logout-btn" id="logout-btn">Logout</button>
+            </div>
+        </div>
+        
+        <div id="game-section" style="display: none;">
+            <div class="game-fullscreen">
+                <div class="game-header">
+                    <button id="back-to-menu-btn" class="back-btn">← Menu</button>
+                    <div class="difficulty-container">
+                        <button class="diff-btn active" data-difficulty="easy">Easy</button>
+                        <button class="diff-btn" data-difficulty="normal">Normal</button>
+                        <button class="diff-btn" data-difficulty="hard">Hard</button>
+                    </div>
+                    <div class="score-display">
+                        <span class="score-item">Score: <span id="score">0</span></span>
+                        <span class="score-item">High: <span id="high-score">0</span></span>
+                    </div>
+                </div>
+                <canvas id="gameCanvas"></canvas>
+                <div class="start-hint">Press arrow keys to start</div>
+            </div>
+        </div>
+        
+        <div id="leaderboard-section" style="display: none;">
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <button id="back-to-menu-from-leaderboard-btn" class="back-btn">← Menu</button>
+                    <h1>Leaderboards</h1>
+                </div>
+                <div class="leaderboard">
+                    <div id="leaderboard-list"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="game-over-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2>Game Over!</h2>
+                <p>Your score: <span id="final-score">0</span></p>
+                <div class="modal-buttons">
+                    <button id="restart-btn">Restart</button>
+                    <button id="main-menu-btn">Exit to Main Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
