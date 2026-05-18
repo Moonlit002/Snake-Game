@@ -60,14 +60,29 @@ CREATE TABLE IF NOT EXISTS scores (
 
 3. Click "Run" to execute the query.
 
-### 4. Get Supabase Credentials
+### 4. Disable RLS (Row Level Security) for Testing
+Supabase enables RLS by default, which will block our API requests! Let's disable it for now:
+
+1. In Supabase dashboard, go to **Table Editor**
+2. Click on the `users` table
+3. Click the **"RLS"** button at the top right
+4. Click **"Disable RLS"**
+5. Repeat the same steps for the `scores` table
+
+Alternatively, you can run this SQL in the SQL Editor to disable RLS for both tables:
+```sql
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE scores DISABLE ROW LEVEL SECURITY;
+```
+
+### 5. Get Supabase Credentials
 
 1. In your Supabase project dashboard, go to **Project Settings** → **API**.
 2. Copy:
    - Your **Project URL** (starts with https://)
    - Your **anon public** key
 
-### 5. Configure Environment Variables
+### 6. Configure Environment Variables
 
 1. Create a new file in the project root named `.env`
 2. Copy the contents from `.env.example` into `.env`

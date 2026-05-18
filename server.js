@@ -22,37 +22,55 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/register', async (req, res) => {
   const { username, password } = req.body;
+  
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required' });
   }
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    const { data: existingUser } = await supabase
+
+    const { data: checkUser, error: checkError } = await supabase
       .from('users')
       .select('id')
       .eq('username', username);
-    
-    if (existingUser && existingUser.length > 0) {
+
+    if (checkError) {
+      console.error('Check username error:', checkError);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+
+    if (checkUser && checkUser.length > 0) {
       return res.status(400).json({ error: 'Username already exists' });
     }
-    
-    const { data: newUser, error: insertError } = await supabase
+
+    const { data: insertResult, error: insertError } = await supabase
       .from('users')
-      .insert({ username, password: hashedPassword })
-      .select('id, username');
-    
+      .insert([{ username, password: hashedPassword }])
+      .select();
+
     if (insertError) {
       console.error('Insert user error:', insertError);
       return res.status(500).json({ error: 'Internal server error' });
     }
-    
-    if (!newUser || newUser.length === 0) {
-      return res.status(500).json({ error: 'Failed to create user' });
+
+    if (!insertResult || insertResult.length === 0) {
+      return res.status(500).json({ error: 'Failed to create account' });
     }
-    
-    const token = jwt.sign({ userId: newUser[0].id, username: newUser[0].username }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, username: newUser[0].username, userId: newUser[0].id });
+
+    const newUser = insertResult[0];
+    const token = jwt.sign(
+      { userId: newUser.id, username: newUser.username },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      token,
+      username: newUser.username,
+      userId: newUser.id
+    });
+
   } catch (error) {
     console.error('Register error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -61,27 +79,45 @@ app.post('/api/register', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
+
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required' });
   }
+
   try {
     const { data: users, error: fetchError } = await supabase
       .from('users')
       .select('id, username, password')
       .eq('username', username);
-    
-    if (fetchError || !users || users.length === 0) {
+
+    if (fetchError) {
+      console.error('Fetch user error:', fetchError);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+
+    if (!users || users.length === 0) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
-    
+
     const user = users[0];
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (!isValidPassword) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
-    
-    const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ token, username: user.username, userId: user.id });
+
+    const token = jwt.sign(
+      { userId: user.id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      token,
+      username: user.username,
+      userId: user.id
+    });
+
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });
